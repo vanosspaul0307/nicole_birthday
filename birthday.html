@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阿鼻鼻 21 歲生日倒數</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #fff;
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow: hidden;
+            text-align: center;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            z-index: 20;
+            position: relative;
+        }
+
+        #countdown {
+            display: flex;
+            gap: 20px;
+            z-index: 20;
+            position: relative;
+        }
+
+        .time-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            min-width: 80px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .number {
+            font-size: 3rem;
+            font-weight: 700;
+            display: block;
+            color: #e94560;
+        }
+
+        .label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #ddd;
+        }
+
+        /* 靜態星星 */
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            z-index: 1; 
+            animation: twinkle 2s infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* 流星樣式 */
+        .shooting-star {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
+            filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
+            z-index: 2;
+            animation: shooting 1.5s ease-out forwards;
+            opacity: 0;
+        }
+
+        .shooting-star::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%);
+            height: 4px;
+            width: 4px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 15px #fff, 0 0 30px #fff;
+        }
+
+        @keyframes shooting {
+            0% {
+                width: 0;
+                transform: translateX(0) translateY(0) rotate(135deg); 
+                opacity: 1;
+            }
+            100% {
+                width: 300px;
+                transform: translateX(-300px) translateY(300px) rotate(135deg); 
+                opacity: 0;
+            }
+        }
+
+        #birthday-message {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            z-index: 30;
+            position: relative;
+            animation: popIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            background: rgba(0, 0, 0, 0.4);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+        }
+
+        #birthday-message h2 {
+            font-size: 4rem;
+            background: linear-gradient(to right, #f8b500, #fceabb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+            line-height: 1.2;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        #birthday-message p {
+            font-size: 1.5rem;
+            margin-top: 15px;
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        #balloon-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 15;
+            display: none;
+        }
+
+        .balloon {
+            position: absolute;
+            bottom: -600px; 
+            border-radius: 50%;
+            border: 6px solid #fff;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15), inset 0 5px 15px rgba(255,255,255,0.4);
+            object-fit: cover;
+            opacity: 0.95;
+            animation-timing-function: linear;
+            animation-fill-mode: forwards;
+        }
+        
+        @keyframes floatUpRight {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            100% { transform: translateY(-180vh) rotate(60deg); opacity: 1; }
+        }
+
+        @keyframes floatUpLeft {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            100% { transform: translateY(-180vh) rotate(-60deg); opacity: 1; }
+        }
+
+        /* --- 狗狗容器共用樣式 --- */
+        .dog-container {
+            position: fixed;
+            bottom: 20px;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: subtleBounce 3s infinite ease-in-out;
+        }
+
+        /* 左邊狗狗位置 */
+        #dog-left {
+            left: 20px;
+            animation-delay: 0.5s; /* 讓兩隻狗搖擺稍微錯開 */
+        }
+
+        /* 右邊狗狗位置 */
+        #dog-right {
+            right: 20px;
+        }
+
+        /* 狗狗圖片共用樣式 */
+        .dog-img {
+            width: 150px; /* 電腦版大小 */
+            height: auto;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3));
+        }
+
+        /* 對話框樣式 */
+        .speech-bubble {
+            position: relative;
+            background: #ffffff;
+            color: #333;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+            white-space: nowrap;
+        }
+
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 10px 10px 0;
+            border-style: solid;
+            border-color: #ffffff transparent;
+        }
+
+        @keyframes subtleBounce {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* --- 手機版響應式調整 --- */
+        @media (max-width: 600px) {
+            h1 { font-size: 1.8rem; }
+            .time-box { min-width: 50px; padding: 10px; }
+            .number { font-size: 2rem; }
+            #birthday-message h2 { font-size: 2.5rem; }
+            #birthday-message p { font-size: 1.2rem; }
+            
+            /* 手機版：縮小狗狗並往兩側靠，避免擠壓 */
+            .dog-img {
+                width: 90px;
+            }
+            .speech-bubble {
+                font-size: 0.8rem;
+                padding: 6px 10px;
+            }
+            
+            #dog-left {
+                left: 5px;
+                bottom: 10px;
+            }
+            #dog-right {
+                right: 5px;
+                bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1 id="main-title">阿鼻鼻 21 歲生日倒數 ⏳</h1>
+
+    <div id="countdown">
+        <div class="time-box">
+            <span class="number" id="days">00</span>
+            <span class="label">天</span>
+        </div>
+        <div class="time-box">
+            <span class="number" id="hours">00</span>
+            <span class="label">時</span>
+        </div>
+        <div class="time-box">
+            <span class="number" id="minutes">00</span>
+            <span class="label">分</span>
+        </div>
+        <div class="time-box">
+            <span class="number" id="seconds">00</span>
+            <span class="label">秒</span>
+        </div>
+    </div>
+
+    <div id="birthday-message">
+        <h2>For 阿寶<br>祝你 21 歲生日快樂！</h2>
+        <p>希望你永遠都是我眼中最開心的你~<br>祝你蛋糕吃到飽!🍰衣服買不完!👗</p>
+    </div>
+
+    <div id="balloon-container"></div>
+
+    <div id="dog-left" class="dog-container">
+        <div class="speech-bubble">麻麻生日快樂!</div>
+        <img class="dog-img" src="dog_image.png" alt="左邊狗狗">
+    </div>
+
+    <div id="dog-right" class="dog-container">
+        <div class="speech-bubble">旺~! 我是傻傻</div>
+        <img class="dog-img" src="santa_samoyed.png" alt="右邊狗狗">
+    </div>
+
+    <script>
+        // --- 設定區域 ---
+        const birthdayDate = new Date("December 8, 2025 00:00:00").getTime();
+
+        const imagePaths = [];
+        for (let i = 1; i <= 48; i++) {
+            imagePaths.push(`image (${i}).jpg`);
+        }
+        // ----------------
+
+        const countdownEl = document.getElementById('countdown');
+        const titleEl = document.getElementById('main-title');
+        const messageEl = document.getElementById('birthday-message');
+        const balloonContainer = document.getElementById('balloon-container');
+        let balloonInterval;
+        let timerInterval;
+
+        function createStars() {
+            const starCount = 100;
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                const size = Math.random() * 3 + 'px';
+                star.style.width = size;
+                star.style.height = size;
+                star.style.animationDelay = Math.random() * 2 + 's';
+                document.body.appendChild(star);
+            }
+        }
+
+        function createShootingStar() {
+            const shootingStar = document.createElement('div');
+            shootingStar.classList.add('shooting-star');
+            shootingStar.style.top = Math.random() * 40 + '%'; 
+            shootingStar.style.right = Math.random() * 50 + '%'; 
+            document.body.appendChild(shootingStar);
+            setTimeout(() => {
+                shootingStar.remove();
+            }, 2000);
+        }
+
+        function scheduleShootingStar() {
+            const randomDelay = Math.random() * 5000 + 5000; 
+            setTimeout(() => {
+                createShootingStar();
+                scheduleShootingStar(); 
+            }, randomDelay);
+        }
+
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const distance = birthdayDate - now;
+
+            if (distance < 0) {
+                clearInterval(timerInterval);
+                showBirthdayMode();
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            document.getElementById('days').innerText = String(days).padStart(2, '0');
+            document.getElementById('hours').innerText = String(hours).padStart(2, '0');
+            document.getElementById('minutes').innerText = String(minutes).padStart(2, '0');
+            document.getElementById('seconds').innerText = String(seconds).padStart(2, '0');
+        }
+
+        function showBirthdayMode() {
+            countdownEl.style.display = 'none';
+            titleEl.style.display = 'none';
+
+            messageEl.style.display = 'flex';
+            balloonContainer.style.display = 'block';
+            
+            startBalloonAnimation();
+            launchFireworks();
+        }
+
+        function launchFireworks() {
+            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 5 }; 
+            function randomInRange(min, max) { return Math.random() * (max - min) + min; }
+
+            setInterval(function() {
+                var particleCount = randomInRange(40, 60);
+                confetti(Object.assign({}, defaults, { 
+                    particleCount, 
+                    origin: { x: randomInRange(0.1, 0.9), y: Math.random() - 0.2 } 
+                }));
+            }, 700); 
+        }
+
+        function createBalloon(imagePath) {
+            const balloon = document.createElement('img');
+            balloon.src = imagePath;
+            balloon.classList.add('balloon');
+
+            const size = Math.random() * 150 + 200;
+            balloon.style.width = `${size}px`;
+            balloon.style.height = `${size}px`;
+
+            balloon.style.left = `${Math.random() * 80 + 5}%`;
+
+            const duration = Math.random() * 13 + 17;
+            balloon.style.animationDuration = `${duration}s`;
+
+            balloon.style.animationDelay = `${Math.random() * 4}s`;
+
+            if (Math.random() < 0.5) {
+                balloon.style.animationName = 'floatUpLeft'; 
+            } else {
+                balloon.style.animationName = 'floatUpRight'; 
+            }
+
+            balloon.onerror = function() { this.style.display = 'none'; };
+
+            balloonContainer.appendChild(balloon);
+
+            setTimeout(() => { balloon.remove(); }, (duration + 5) * 1000);
+        }
+
+        function startBalloonAnimation() {
+            let imageIndex = 0;
+            for(let i=0; i<5; i++) { createBalloon(imagePaths[i]); }
+            imageIndex = 5;
+
+            balloonInterval = setInterval(() => {
+                createBalloon(imagePaths[imageIndex]);
+                imageIndex = (imageIndex + 1) % imagePaths.length;
+            }, 1500);
+        }
+
+        // 初始化
+        createStars();
+        scheduleShootingStar();
+        timerInterval = setInterval(updateCountdown, 1000);
+        updateCountdown();
+
+    </script>
+</body>
+</html>
